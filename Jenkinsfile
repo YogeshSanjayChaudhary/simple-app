@@ -2,39 +2,39 @@ pipeline {
     agent any
     tools {
         maven 'M2_HOME'
-    }
-    options {
-        buildDiscarder logRotator(daysToKeepStr: '5', numToKeepStr: '7')
-    }
-    stages{
-        stage('Build'){
-            steps{
-                 sh script: 'mvn clean package'
-                 archiveArtifacts artifacts: 'target/*.war', onlyIfSuccessful: true
+        jdk 'JAVA_HOME'
+    }  
+    stages {
+        stage("git clone") {
+            steps {
+                git 'https://github.com/YogeshSanjayChaudhary/simple-app.git'
             }
         }
-        stage('Upload War To Nexus'){
-            steps{
-                script{
-
-                    def mavenPom = readMavenPom file: 'pom.xml'
-                    def nexusRepoName = mavenPom.version.endsWith("SNAPSHOT") ? "simpleapp-snapshot" : "mymavenrepo"
-                    nexusArtifactUploader artifacts: [
-                        [
-                            artifactId: 'simple-app', 
-                            classifier: '', 
-                            file: "target/simple-app-${mavenPom.version}.war", 
-                            type: 'war'
-                        ]
-                    ], 
-                    credentialsId: 'nexus3', 
-                    groupId: 'in.javahome', 
-                    nexusUrl: '172.31.37.37:8081', 
-                    nexusVersion: 'nexus3', 
-                    protocol: 'http', 
-                    repository: nexusRepoName, 
-                    version: "${mavenPom.version}"
-                    }
+        stage("Maven Build") {
+            steps {
+                sh 'pwd'
+                sh 'mvn clean install package'
+            }
+        }
+        stage("Upload Artifacts To Nexus") {
+            steps {
+                nexusArtifactUploader artifacts: [
+                    [
+                        artifactId: 'simple-app', 
+                        classifier: '', 
+                        file: 'target/simple-app-3.0.0-SNAPSHOT.war', 
+                        type: 'war'
+                    ]
+                ], 
+                credentialsId: 'nexus', 
+                groupId: 'in.javahome', 
+                nexusUrl: '52.66.67.239:8081', 
+                nexusVersion: 'nexus3', 
+                protocol: 'http', 
+                repository: 'http://52.66.67.239:8081/repository/mymavenrepo/', 
+                version: '1.0.0'
+                
+               
             }
         }
     }
